@@ -1,10 +1,10 @@
 package com.yourcompany.service;
 
-import com.yourcompany.models.SauceSubUsers;
+import com.yourcompany.models.Activity;
+import com.yourcompany.models.SauceSubUserList;
 import com.yourcompany.models.SauceUser;
-import okhttp3.ResponseBody;
+import com.yourcompany.models.UsageList;
 import retrofit2.Call;
-import retrofit2.Response;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
 
@@ -18,9 +18,14 @@ public interface SauceLabsService {
     Call<SauceUser> getUser(@Path("username") String username);
 
     @GET("users/{username}/list-subaccounts")
-    Call<SauceSubUsers> getSubAccountsList(@Path("username") String username);
+    Call<SauceSubUserList> getSubAccountsList(@Path("username") String username);
 
     @GET("users/{username}/subaccounts")
     Call<List<SauceUser>> getSubAccounts(@Path("username") String username);
+
+    @GET("users/{username}/activity")
+    Call<Activity> getUserActivity(@Path("username") String username);
+    @GET("users/{username}/usage")
+    Call<UsageList> getUserUsage(@Path("username") String username);
 }
 

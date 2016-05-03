@@ -14,7 +14,7 @@ import java.util.List;
  * Created by mehmetg on 4/7/16.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SauceSubUsers {
+public class SauceSubUserList {
 
     @JsonProperty("users_total")
     private int usersTotal;

@@ -6,7 +6,7 @@ Prints out:
 * A hierarchical sub-account list, all under the user indented by level.
 
 ## Setup:
-```export SAUCE_USERNAME=<sauce_user_name>```
+```export SAUCE_USER=<sauce_user_name>```
 
 ```export SAUCE_ACCESS_KEY=<sauce_access_key>```
 
