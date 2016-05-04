@@ -26,6 +26,9 @@ public interface SauceLabsService {
     @GET("users/{username}/usage")
     Call<UsageList> getUserUsage(@Path("username") String username);
 
+    @GET("{username}/tunnels")
+    Call<List<String>> getUserActiveTunnels(@Path("username") String username);
+
     @HTTP(method = "DELETE", hasBody = true, path = "users")
     Call<List<String>> deleteUsers(@Body UsersToDelete usersToDelete);
 }

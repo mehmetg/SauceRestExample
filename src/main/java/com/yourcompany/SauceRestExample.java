@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by mehmetgerceker on 4/7/16.
@@ -63,23 +64,35 @@ public class SauceRestExample {
         return subUsers;
     }
 
-    private static void printUserTree(SauceLabsService service, String username) {
+    private static void printUserTree(SauceLabsService service, String username, boolean withTunnels) {
         try{
             Call<SauceUser> mainUserCall = service.getUser(username);
             SauceUser user = mainUserCall.execute().body();
-            System.out.format("Username: %s, Email: %s\n", user.getUsername(), user.getEmail());
-            printUserTree(service, username, "");
+            System.out.format("First Name: %s, Last Name: %s, Username: %s, Email: %s\n",
+                    user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
+            if (withTunnels) {
+                List<String> tunnelIds = getUserTunnelIds(service, username);
+                //tunnelIds = tunnelIds ? tunnelIds != null : new ArrayList<>();
+                System.out.format("Tunnels: %s\n", tunnelIds.stream().collect(Collectors.joining(",")));
+            }
+            printUserTree(service, username, "", withTunnels);
         } catch (IOException e){
             e.printStackTrace();
         }
     }
-    private static void printUserTree(SauceLabsService service, String username, String levelPad) throws IOException{
+    private static void printUserTree(SauceLabsService service, String username, String levelPad, boolean withTunnels)
+            throws IOException{
         Call<SauceSubUserList> subAccountsCall = service.getSubAccountsList(username);
         List<SauceUser> subUsers = subAccountsCall.execute().body().getSubUsers();
         for(SauceUser user:subUsers){
             String childPad = levelPad+"\t";
-            System.out.format("%s-Username: %s, Email: %s\n", childPad, user.getUsername(), user.getEmail());
-            printUserTree(service, user.getUsername(), childPad);
+            System.out.format("%s-First Name: %s, Last Name: %s, Username: %s, Email: %s\n",
+                    childPad, user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
+            if (withTunnels) {
+                System.out.format("%s-Tunnels: %s\n",
+                        childPad, getUserTunnelIds(service, username).stream().collect(Collectors.joining(",")));
+            }
+            printUserTree(service, user.getUsername(), childPad, withTunnels);
         }
     }
 
@@ -140,11 +153,14 @@ public class SauceRestExample {
         for (SauceUser user:subUsers){
             System.out.println("=============================================================");
             System.out.format("Username: %s, Email: %s\n", user.getUsername(), user.getEmail());
+            List<String> tunnelIds = getUserTunnelIds(service, user.getUsername());
+            System.out.format("Tunnels: %s\n", tunnelIds.stream().collect(Collectors.joining(",")));
             active = accountUsedInTheLast(days, user.getUsername(), service);
             System.out.format("Status Active: %b\n", active);
             System.out.println("User tree:");
-            printUserTree(service,user.getUsername());
-            if (!active) {
+            printUserTree(service, user.getUsername(), true);
+            if (!active && tunnelIds.get(0).equalsIgnoreCase("None")) {
+                System.out.format("This user has been idle for more than %d days and has no tunnels running", days);
                 System.out.format("Are you sure you'd like to add user \"%s\" to the deletion list? Yes/NO\n",
                         user.getUsername());
                 String response = System.console().readLine();
@@ -201,5 +217,23 @@ public class SauceRestExample {
             System.err.format("User %s deletion FAILED!\n", userToDelete.getUsername());
             e.printStackTrace();
         }
+    }
+
+    private static List<String> getUserTunnelIds(SauceLabsService service, String username){
+        List<String> tunnelIds = null;
+        try {
+            Call<List<String>> tunnelCall = service.getUserActiveTunnels(username);
+            Response<List<String>> res = tunnelCall.execute();
+            if (res.isSuccessful()){
+                tunnelIds = res.body();
+            } else {
+                tunnelIds = new ArrayList<>();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (tunnelIds != null && tunnelIds.size() == 0)
+            tunnelIds.add("None");
+        return tunnelIds;
     }
 }
