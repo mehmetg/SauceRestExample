@@ -6,17 +6,15 @@ import com.yourcompany.models.SauceUser;
 import com.yourcompany.models.UsageList;
 import com.yourcompany.service.SauceLabsService;
 import com.yourcompany.service.SauceLabsServiceGenerator;
-import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by mehmetgerceker on 4/7/16.
@@ -33,12 +31,11 @@ public class SauceRestExample {
         //System.out.println("============================");
         //printSubAccounts(service, username);
         //System.out.println("============================");
-        //System.out.println("Hierarchical Sub-Ac" +
-        //        "count Tree");
-        //System.out.println("============================");
-        //printUserTree(service, username);
-        //System.out.println("============================");
-        printAccountNotUsedSince(service, "mehmetg", 14);
+        System.out.println("Hierarchical Sub-Account Tree");
+        System.out.println("============================");
+        printUserTree(service, "ancesortaccounthere", true);
+        System.out.println("============================");
+
     }
 
 
@@ -47,30 +44,43 @@ public class SauceRestExample {
             Call<List<SauceUser>> subAccountCall = service.getSubAccounts(parentUsername);
             List<SauceUser> subUsers = subAccountCall.execute().body();
             for(SauceUser user:subUsers){
-                System.out.format("Username: %s, Email: %s\n", user.getUsername(), user.getEmail());
+                System.out.format("First Name: %s, Last Name: %s, Username: %s, Email: %s\n",
+                        user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
             }
         } catch (IOException e){
             e.printStackTrace();
         }
     }
 
-    private static void printUserTree(SauceLabsService service, String username) {
+    private static void printUserTree(SauceLabsService service, String username, boolean withTunnels) {
         try{
             Call<SauceUser> mainUserCall = service.getUser(username);
             SauceUser user = mainUserCall.execute().body();
-            System.out.format("Username: %s, Email: %s\n", user.getUsername(), user.getEmail());
-            printUserTree(service, username, "");
+            System.out.format("First Name: %s, Last Name: %s, Username: %s, Email: %s\n",
+                    user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
+            if (withTunnels) {
+                List<String> tunnelIds = getUserTunnelIds(service, username);
+                //tunnelIds = tunnelIds ? tunnelIds != null : new ArrayList<>();
+                System.out.format("Tunnels: %s\n", tunnelIds.stream().collect(Collectors.joining(",")));
+            }
+            printUserTree(service, username, "", withTunnels);
         } catch (IOException e){
             e.printStackTrace();
         }
     }
-    private static void printUserTree(SauceLabsService service, String username, String levelPad) throws IOException{
+    private static void printUserTree(SauceLabsService service, String username, String levelPad, boolean withTunnels)
+            throws IOException{
         Call<SauceSubUserList> subAccountsCall = service.getSubAccountsList(username);
         List<SauceUser> subUsers = subAccountsCall.execute().body().getSubUsers();
         for(SauceUser user:subUsers){
             String childPad = levelPad+"\t";
-            System.out.format("%s-Username: %s, Email: %s\n", childPad, user.getUsername(), user.getEmail());
-            printUserTree(service, user.getUsername(), childPad);
+            System.out.format("%s-First Name: %s, Last Name: %s, Username: %s, Email: %s\n",
+                    childPad, user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
+            if (withTunnels) {
+                System.out.format("%s-Tunnels: %s\n",
+                        childPad, getUserTunnelIds(service, username).stream().collect(Collectors.joining(",")));
+            }
+            printUserTree(service, user.getUsername(), childPad, withTunnels);
         }
     }
 
@@ -102,5 +112,23 @@ public class SauceRestExample {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private static List<String> getUserTunnelIds(SauceLabsService service, String username){
+        List<String> tunnelIds = null;
+        try {
+            Call<List<String>> tunnelCall = service.getUserActiveTunnels(username);
+            Response<List<String>> res = tunnelCall.execute();
+            if (res.isSuccessful()){
+                tunnelIds = res.body();
+            } else {
+                tunnelIds = new ArrayList<>();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (tunnelIds.size() == 0)
+            tunnelIds.add("None");
+        return tunnelIds;
     }
 }
