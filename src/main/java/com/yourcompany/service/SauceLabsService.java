@@ -27,10 +27,10 @@ public interface SauceLabsService {
     @GET("users/{username}/usage")
     Call<UsageList> getUserUsage(@Path("username") String username);
 
-    @GET("users/{username}/tunnels")
+    @GET("{username}/tunnels")
     Call<List<String>> getUserActiveTunnels(@Path("username") String username);
 
-    @GET("users/{username}/tunnels{tunnelId")
+    @GET("{username}/tunnels{tunnelId}")
     Call<Tunnel> getUserTunnel(@Path("username") String username, @Path("tunnelId") String tunnelId);
 
 }

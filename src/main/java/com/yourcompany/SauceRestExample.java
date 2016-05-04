@@ -33,7 +33,7 @@ public class SauceRestExample {
         //System.out.println("============================");
         System.out.println("Hierarchical Sub-Account Tree");
         System.out.println("============================");
-        printUserTree(service, "ancesortaccounthere", true);
+        printUserTree(service, username, true);
         System.out.println("============================");
 
     }
@@ -78,7 +78,8 @@ public class SauceRestExample {
                     childPad, user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
             if (withTunnels) {
                 System.out.format("%s-Tunnels: %s\n",
-                        childPad, getUserTunnelIds(service, username).stream().collect(Collectors.joining(",")));
+                        childPad,
+                        getUserTunnelIds(service, user.getUsername()).stream().collect(Collectors.joining(",")));
             }
             printUserTree(service, user.getUsername(), childPad, withTunnels);
         }
