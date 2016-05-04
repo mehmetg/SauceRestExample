@@ -64,35 +64,54 @@ public class SauceRestExample {
         return subUsers;
     }
 
-    private static void printUserTree(SauceLabsService service, String username, boolean withTunnels) {
+    private static void printUserTree(SauceLabsService service, String username, boolean withTunnels, Integer idleDays) {
         try{
             Call<SauceUser> mainUserCall = service.getUser(username);
             SauceUser user = mainUserCall.execute().body();
-            System.out.format("First Name: %s, Last Name: %s, Username: %s, Email: %s\n",
+            String out = String.format("First Name: %s, Last Name: %s, Username: %s, Email: %s",
                     user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
+            if (idleDays != null){
+
+                System.out.format("%s, Active: %b\n", out, accountUsedInTheLast(idleDays, user.getUsername(), service));
+
+            } else {
+                System.out.println(out);
+            }
             if (withTunnels) {
                 List<String> tunnelIds = getUserTunnelIds(service, username);
                 //tunnelIds = tunnelIds ? tunnelIds != null : new ArrayList<>();
                 System.out.format("Tunnels: %s\n", tunnelIds.stream().collect(Collectors.joining(",")));
             }
-            printUserTree(service, username, "", withTunnels);
+            printUserTree(service, username, "", withTunnels, idleDays);
         } catch (IOException e){
             e.printStackTrace();
         }
     }
-    private static void printUserTree(SauceLabsService service, String username, String levelPad, boolean withTunnels)
+    private static void printUserTree(SauceLabsService service,
+                                      String username, String levelPad, boolean withTunnels, Integer idleDays)
             throws IOException{
         Call<SauceSubUserList> subAccountsCall = service.getSubAccountsList(username);
         List<SauceUser> subUsers = subAccountsCall.execute().body().getSubUsers();
         for(SauceUser user:subUsers){
             String childPad = levelPad+"\t";
-            System.out.format("%s-First Name: %s, Last Name: %s, Username: %s, Email: %s\n",
-                    childPad, user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail());
+            String out = String.format("%s-First Name: %s, Last Name: %s, Username: %s, Email: %s",
+                    childPad,
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getUsername(),
+                    user.getEmail());
+            if (idleDays != null){
+
+                System.out.format("%s, Active: %b\n", out, accountUsedInTheLast(idleDays, user.getUsername(), service));
+
+            } else {
+                System.out.println(out);
+            }
             if (withTunnels) {
                 System.out.format("%s-Tunnels: %s\n",
                         childPad, getUserTunnelIds(service, username).stream().collect(Collectors.joining(",")));
             }
-            printUserTree(service, user.getUsername(), childPad, withTunnels);
+            printUserTree(service, user.getUsername(), childPad, withTunnels, idleDays);
         }
     }
 
@@ -147,6 +166,7 @@ public class SauceRestExample {
 
     private static void deleteIdleSubAccounts(int days, String parentUsername, SauceLabsService service){
         List<SauceUser> subUsers = getSubAccounts(service, parentUsername);
+        System.out.format("Number of subaccounts: %d\n", subUsers.size());
         List<SauceUser> idleUsers = new ArrayList<SauceUser>();
         boolean active = false;
         System.out.println("====================Checking Idle Users=======================");
@@ -158,7 +178,7 @@ public class SauceRestExample {
             active = accountUsedInTheLast(days, user.getUsername(), service);
             System.out.format("Status Active: %b\n", active);
             System.out.println("User tree:");
-            printUserTree(service, user.getUsername(), true);
+            printUserTree(service, user.getUsername(), true, days);
             if (!active && tunnelIds.get(0).equalsIgnoreCase("None")) {
                 System.out.format("This user has been idle for more than %d days and has no tunnels running", days);
                 System.out.format("Are you sure you'd like to add user \"%s\" to the deletion list? Yes/NO\n",
@@ -180,7 +200,7 @@ public class SauceRestExample {
                 String response = System.console().readLine();
                 if (response.equalsIgnoreCase("yes")) {
                     System.out.format("Deleting user %s, email: %s \n", user.getUsername(), user.getEmail());
-                    deleteUser(service, user);
+                    //deleteUser(service, user);
                 }
             }
         }
