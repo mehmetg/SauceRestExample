@@ -1,13 +1,11 @@
 package com.yourcompany.service;
 
-import com.yourcompany.models.SauceSubUsers;
-import com.yourcompany.models.SauceUser;
+import com.yourcompany.models.*;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
-import retrofit2.Response;
-import retrofit2.http.GET;
-import retrofit2.http.Path;
+import retrofit2.http.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,9 +16,17 @@ public interface SauceLabsService {
     Call<SauceUser> getUser(@Path("username") String username);
 
     @GET("users/{username}/list-subaccounts")
-    Call<SauceSubUsers> getSubAccountsList(@Path("username") String username);
+    Call<SauceSubUserList> getSubAccountsList(@Path("username") String username);
 
     @GET("users/{username}/subaccounts")
     Call<List<SauceUser>> getSubAccounts(@Path("username") String username);
+
+    @GET("users/{username}/activity")
+    Call<Activity> getUserActivity(@Path("username") String username);
+    @GET("users/{username}/usage")
+    Call<UsageList> getUserUsage(@Path("username") String username);
+
+    @HTTP(method = "DELETE", hasBody = true, path = "users")
+    Call<List<String>> deleteUsers(@Body UsersToDelete usersToDelete);
 }
 
